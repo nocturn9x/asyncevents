@@ -61,7 +61,7 @@ async def main():
     # Notice how, until here, the output is in order: this is on purpose!
     # When using blocking mode, asyncevents even guarantees that handlers
     # with different priorities will be executed in order
-    print("Firing blocking event 'hello'")
+    print("Firing non-blocking event 'hi'")
     await emit("hi", block=False)  # This one spawns hi() and returns immediately
     print("Non-blocking event 'hello' fired")
     await emit("event3")  # Does nothing: No handlers registered for event3!
