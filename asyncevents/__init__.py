@@ -93,5 +93,5 @@ __all__ = [
     "emit",
     "wait",
     "get_current_emitter",
-    "set_current_emitter"
+    "set_current_emitter",
 ]

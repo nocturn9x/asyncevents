@@ -134,7 +134,9 @@ class AsyncEventEmitter:
         # This implementation of emit() returns only after
         # all handlers have finished executing
         await self._check_event(event)
-        temp: List[Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]] = self.handlers[event].copy()
+        temp: List[
+            Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
+        ] = self.handlers[event].copy()
         t: Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
         while temp:
             # We use heappop because we want the first
