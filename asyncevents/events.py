@@ -25,8 +25,8 @@ from asyncevents.constants import ExceptionHandling, UnknownEventHandling, Execu
 class AsyncEventEmitter:
     """
     A simple priority-based asynchronous event emitter. In contrast to a scheduler, which
-    continuously runs in the background orchestrating execution of _tasks, an emitter runs
-    only when an event is emitted and it only runs the _tasks that are meant to catch said
+    continuously runs in the background orchestrating execution of tasks, an emitter runs
+    only when an event is emitted and it only runs the tasks that are meant to catch said
     event, if any.
 
     :param on_error: Tells the emitter what to do when an exception occurs inside an event
@@ -51,7 +51,7 @@ class AsyncEventEmitter:
     :type on_unknown_event: Union[UnknownEventHandling, Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]], optional
     :param mode: Tells the emitter how event handlers should be spawned. It should be an entry of the
         the asyncevents.ExecutionMode enum. If it is set to ExecutionMode.PAUSE, the default, the event
-        emitter spawns _tasks by awaiting each matching handler: this causes it to pause on every handler.
+        emitter spawns tasks by awaiting each matching handler: this causes it to pause on every handler.
         If ExecutionMode.NOWAIT is used, the emitter uses asyncio.create_task to spawns all the handlers
         at the same time (note though that using this mode kind of breaks the priority queueing: the handlers
         are started according to their priorities, but once they are started they are handled by asyncio's
