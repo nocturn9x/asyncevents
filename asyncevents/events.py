@@ -62,8 +62,6 @@ class AsyncEventEmitter:
     :type mode: ExecutionMode
     """
 
-    # Implementations for emit()
-
     async def _check_event(self, event: str):
         """
         Performs checks about the given event
@@ -102,6 +100,8 @@ class AsyncEventEmitter:
             elif self.on_error == ExceptionHandling.LOG:
                 self.logger.error(f"An exception occurred while handling {event!r}: {type(e).__name__} -> {e}")
             # Note how the IGNORE case is excluded: we just do nothing after all
+
+    # Implementations for emit()
 
     async def _emit_nowait(self, event: str):
         # This implementation of emit() returns immediately
