@@ -31,7 +31,7 @@ class AsyncEventEmitter:
 
     :param on_error: Tells the emitter what to do when an exception occurs inside an event
         handler. This value can either be an entry from the asyncevents.ExceptionHandling
-        enum or a coroutine object. If the passed object is a coroutine, it is awaited
+        enum or a coroutine function. If the passed object is a coroutine function, it is awaited
         whenever an exception is caught with the AsyncEventEmitter instance, the exception
         object and the event name as arguments (errors from the exception handler itself are
         not caught). Defaults to ExceptionHandling.PROPAGATE, which lets exceptions fall trough
@@ -42,8 +42,8 @@ class AsyncEventEmitter:
     :param on_unknown_event: Tells the emitter what to do when an unknown event is triggered. An
         unknown event is an event for which no handler is registered (either because it has never
         been registered or because all of its handlers have been removed). This value can either be
-        an entry from the asyncevents.UnknownEventHandling enum or a coroutine object. If the argument
-        is a coroutine, it is awaited with the AsyncEventEmitter instance and the event name as arguments.
+        an entry from the asyncevents.UnknownEventHandling enum or a coroutine function. If the argument
+        is a coroutine function, it is awaited with the AsyncEventEmitter instance and the event name as arguments.
         Defaults to UnknownEventHandling.IGNORE, which does nothing (other enum values are LOG, which
         prints a log message on the logging.WARNING level, and ERROR which raises an UnknownEvent exception)
         Note: if the given callable is a coroutine, it is awaited, while it's called normally otherwise
