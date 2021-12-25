@@ -72,7 +72,7 @@ class AsyncEventEmitter:
         :type event: str
         """
 
-        if self.handlers.get(event, None) is None:
+        if not self.handlers.get(event):
             if self.on_unknown_event == UnknownEventHandling.IGNORE:
                 return
             elif self.on_unknown_event == UnknownEventHandling.ERROR:
@@ -83,7 +83,7 @@ class AsyncEventEmitter:
                 # It's a coroutine! Call it
                 await self.on_unknown_event(self, event)
 
-    async def _catch_errors_in_awaitable(self, event: str, obj: Awaitable):
+    async def _handle_errors_in_awaitable(self, event: str, obj: Awaitable):
         # Thanks to asyncio's *utterly amazing* (HUGE sarcasm there)
         # exception handling, we have to make this wrapper so we can
         # catch errors on a per-handler basis
@@ -125,7 +125,7 @@ class AsyncEventEmitter:
                         temp[-1][-2],
                     )
                 )
-            self._tasks.append((event, asyncio.create_task(self._catch_errors_in_awaitable(event, task))))
+            self._tasks.append((event, asyncio.create_task(self._handle_errors_in_awaitable(event, task))))
         # We push back the elements
         for t in temp:
             heappush(self.handlers[event], t)
@@ -145,7 +145,7 @@ class AsyncEventEmitter:
             t = heappop(temp)
             if t[-1]:
                 self.unregister_handler(event, t[-2])
-            await self._catch_errors_in_awaitable(event, t[-2](self, event))
+            await self._handle_errors_in_awaitable(event, t[-2](self, event))
 
     def __init__(
         self,

@@ -63,7 +63,7 @@ async def main():
     # with different priorities will be executed in order
     print("Firing non-blocking event 'hi'")
     await emit("hi", block=False)  # This one spawns hi() and returns immediately
-    print("Non-blocking event 'hello' fired")
+    print("Non-blocking event 'hi' fired")
     await emit("event3")  # Does nothing: No handlers registered for event3!
     # We wait now for the the handler of the "hi" event to complete
     t = time.time()
@@ -76,6 +76,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+__Note__: This example showed that the event names match the functions' names: this is just for explanatory purposes!
+It's not compulsory for your event and their respective handlers' names to match. You can also register as many
+functions you want for the same or multiple events and asyncevents will call them all when one of them is fired.
+For more usage examples (until the documentation is done), check out the tests directory or read the source code:
+it's pretty straightforward, I promise.
 
 ## TODOs
 
