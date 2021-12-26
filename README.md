@@ -40,7 +40,7 @@ asyncevents is a small library to help developers perform asynchronous event han
 ## Why?
 
 This library exists because the current alternatives either suck, lack features or are inspired by other languages'
-implementations of events like C# and Node.js: asyncevents aims to be a fully Pythonic library that provides just the
+implementations of events like C# and Node.js: asyncevents aims to be a fully Pythonic library that provides you the
 features you need and nothing more (nor nothing less).
 
 ## Cool! How do I use it?
