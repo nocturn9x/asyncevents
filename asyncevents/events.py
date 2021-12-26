@@ -108,23 +108,17 @@ class AsyncEventEmitter:
         # and runs the handlers in the background
         await self._check_event(event)
         temp: List[Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]] = []
+        t: Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
         while self.handlers[event]:
             # We use heappop because we want the first
             # by priority and the heap queue only has
             # the guarantee we need for heap[0]
             temp.append(heappop(self.handlers[event]))
-            task = asyncio.create_task(temp[-1][-2](self, event))
-            if temp[-1][-1]:
-                task.add_done_callback(
-                    partial(
-                        # The extra argument is the future asyncio passes us,
-                        # which we don't care about
-                        lambda s, ev, corofunc, _: s.unregister_handler(ev, corofunc),
-                        self,
-                        event,
-                        temp[-1][-2],
-                    )
-                )
+            t = temp[-1]
+            if t[-1]:
+                # It won't be re-scheduled
+                temp.pop()
+            task = asyncio.create_task(t[-2](self, event))
             self._tasks.append((event, asyncio.create_task(self._handle_errors_in_awaitable(event, task))))
         # We push back the elements
         for t in temp:

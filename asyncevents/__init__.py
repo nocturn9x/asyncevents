@@ -8,6 +8,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
 import threading
 from asyncevents import events, errors
 from typing import Any, Callable, Coroutine, Optional
@@ -19,7 +20,7 @@ local_storage: threading.local = threading.local()
 AsyncEventEmitter = events.AsyncEventEmitter
 
 
-def get_current_emitter():
+def get_current_emitter() -> AsyncEventEmitter:
     """
     Returns the currently active
     emitter in the current thread
@@ -60,7 +61,7 @@ async def wait(event: Optional[str] = None):
 
 async def emit(event: str, block: bool = True):
     """
-    Shorthand for get_current_emitter().emit(event)
+    Shorthand for get_current_emitter().emit(event, block)
     """
 
     await get_current_emitter().emit(event, block)
@@ -68,17 +69,16 @@ async def emit(event: str, block: bool = True):
 
 def on_event(event: str, priority: int = 0, emitter: AsyncEventEmitter = get_current_emitter(), oneshot: bool = False):
     """
-    Decorator shorthand of emitter.register_event(event, f, priority)
+    Decorator shorthand of emitter.register_event(event, f, priority, oneshot)
     """
 
-    def decorator(corofunc: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]):
+    def decorator(corofunc: Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]):
         emitter.register_event(event, corofunc, priority, oneshot)
 
+        @functools.wraps
         async def wrapper(*args, **kwargs):
             return await corofunc(*args, **kwargs)
-
         return wrapper
-
     return decorator
 
 

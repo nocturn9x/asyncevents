@@ -9,12 +9,24 @@ asyncevents is a small library to help developers perform asynchronous event han
 - The public API is fully type hinted for those sweet, sweet editor suggestions
 - Public API is fully documented (and some private stuff too): you could write this from scratch in a couple of hours (like I did)
 - Very small (~200 CLOC), although it can't fit on a postcard
+- Oneshot events (i.e. fired only once)
 
 
-__Note__: Deterministic event handling can only occur in blocking mode, i.e. when a call to `emit()` blocks until
-all event handlers have run. If the non-blocking mode is used, handlers are started according to their priority, 
-but there's no telling on how they will be further scheduled to run and that depends entirely on the underlying
-asyncio event loop
+## Must Read
+- Deterministic event handling can only occur in blocking mode, i.e. when a call to `emit()` blocks until
+  all event handlers have run. If the non-blocking mode is used, handlers are started according to their priority, 
+  but there's no telling on how they will be further scheduled to run and that depends entirely on the underlying
+  asyncio event loop
+- When using `oneshot=True`, the handler is unscheduled _before_ it is first run: this ensures a consistent behavior
+  between blocking and non-blocking mode.
+- An exception in one event handler does not cause the others to be cancelled when using non-blocking mode. In blocking
+  mode, if an error occurs in one handler, and it propagates, then the handlers after it are not started
+- Exceptions in custom exception handlers are not caught
+- When using non-blocking mode, exceptions are kind of a mess due to how asyncio works: They are only delivered once
+  you `wait()` for an event (same for log messages). This allows spawning many events and only having to worry about 
+  exceptions in a single point in your code, but it also means you have less control over how the handlers run: if an
+  error occurs in one handler, it will be raised once you call `wait()` but any other error in other handlers will
+  be silently dropped
 
 ## Limitations
 
