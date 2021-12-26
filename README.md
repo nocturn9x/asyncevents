@@ -36,9 +36,7 @@ asyncevents is a small library to help developers perform asynchronous event han
   decent machinery to perform roughly what asyncevent does
 - Does not support using any other loop than the currently running one because of some subtleties of modern asyncio
   wrappers like `asyncio.run()` which creates its own event loop internally (_Thanks, asyncio_)
-- Exceptions are kinda finicky in non-blocking mode due to how `asyncio.gather` works: only the first exception
-  in a group of handlers is properly raised and log messages might get doubled. Also, exception logging and propagation
-  is delayed until you `await wait("some_event")` so be careful
+
 ## Why?
 
 This library exists because the current alternatives either suck, lack features or are inspired by other languages'
