@@ -69,7 +69,7 @@ async def main():
     await emit("hello")  # This call blocks until hello() terminates
     print("Handlers for event 'hello' have exited")
     # Notice how, until here, the output is in order: this is on purpose!
-    # When using blocking mode, asyncevents even guarantees that handlers
+    # When using blocking _mode, asyncevents even guarantees that handlers
     # with different priorities will be executed in order
     print("Firing non-blocking event 'hi'")
     await emit("hi", block=False)  # This one spawns hi() and returns immediately

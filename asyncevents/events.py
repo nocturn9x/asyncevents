@@ -8,18 +8,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 import inspect
 import sys
 import time
-import asyncio
-from functools import partial
 from collections import defaultdict
-from asyncevents.errors import UnknownEvent
 from heapq import heappush, heapify, heappop
 from logging import Logger, getLogger, INFO, Formatter, StreamHandler
 from typing import Dict, List, Tuple, Coroutine, Callable, Any, Awaitable, Optional
 
 from asyncevents.constants import ExceptionHandling, UnknownEventHandling, ExecutionMode
+from asyncevents.errors import UnknownEvent
 
 
 class AsyncEventEmitter:
@@ -48,12 +47,13 @@ class AsyncEventEmitter:
         prints a log message on the logging.WARNING level, and ERROR which raises an UnknownEvent exception)
         Note: if the given callable is a coroutine, it is awaited, while it's called normally otherwise
         and its return value is discarded
-    :type on_unknown_event: Union[UnknownEventHandling, Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]], optional
+    :type on_unknown_event: Union[UnknownEventHandling, Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]],
+        optional
     :param mode: Tells the emitter how event handlers should be spawned. It should be an entry of the
         the asyncevents.ExecutionMode enum. If it is set to ExecutionMode.PAUSE, the default, the event
         emitter spawns tasks by awaiting each matching handler: this causes it to pause on every handler.
         If ExecutionMode.NOWAIT is used, the emitter uses asyncio.create_task to spawns all the handlers
-        at the same time (note though that using this mode kind of breaks the priority queueing: the handlers
+        at the same time (note though that using this _mode kind of breaks the priority queueing: the handlers
         are started according to their priorities, but once they are started they are handled by asyncio's
         event loop which is non-deterministic, so expect some disorder). Using ExecutionMode.NOWAIT allows
         to call the emitter's wait() method, which pauses until all currently running event handlers have
@@ -155,40 +155,9 @@ class AsyncEventEmitter:
         Public object constructor
         """
 
-        if not inspect.iscoroutinefunction(on_error) and on_error not in ExceptionHandling:
-            if inspect.iscoroutine(on_unknown_event):
-                raise TypeError(
-                    "on_unknown_event should be a coroutine *function*, not a coroutine! Pass the function"
-                    " object without calling it!"
-                )
-            raise TypeError(
-                "expected on_error to be a coroutine function or an entry from the ExceptionHandling"
-                f" enum, found {type(on_error).__name__!r} instead"
-            )
-        if not inspect.iscoroutinefunction(on_unknown_event) and on_unknown_event not in UnknownEventHandling:
-            if inspect.iscoroutine(on_unknown_event):
-                raise TypeError(
-                    "on_unknown_event should be a coroutine *function*, not a coroutine! Pass the function"
-                    " object without calling it!"
-                )
-            raise TypeError(
-                "expected on_unknown_event to be a coroutine function or an entry from the"
-                f" UnknownEventHandling enum, found {type(on_unknown_event).__name__!r} instead"
-            )
-        if mode not in ExecutionMode:
-            raise TypeError(
-                f"expected mode to be an entry from the ExecutionMode enum, found {type(mode).__name__!r}" " instead"
-            )
         self.on_error = on_error
         self.on_unknown_event = on_unknown_event
         self.mode = mode
-        # Determines the implementation of emit()
-        # and wait() according to the provided
-        # settings and the current Python version
-        if self.mode == ExecutionMode.PAUSE:
-            self._emit_impl = self._emit_await
-        else:
-            self._emit_impl = self._emit_nowait
         self.logger: Logger = getLogger("asyncevents")
         self.logger.handlers = []
         self.logger.setLevel(INFO)
@@ -212,6 +181,122 @@ class AsyncEventEmitter:
         self.handlers: Dict[
             str, List[Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]]
         ] = defaultdict(list)
+
+    @property
+    def on_error(self) -> ExceptionHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]:
+        """
+        Property getter for on_error
+        """
+
+        return self._on_error
+
+    @on_error.setter
+    def on_error(self, on_error: ExceptionHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]):
+        """
+        Property setter for on_error
+
+        :param on_error: Tells the emitter what to do when an exception occurs inside an event
+        handler. This value can either be an entry from the asyncevents.ExceptionHandling
+        enum or a coroutine function. If the passed object is a coroutine function, it is awaited
+        whenever an exception is caught with the AsyncEventEmitter instance, the exception
+        object and the event name as arguments (errors from the exception handler itself are
+        not caught). Defaults to ExceptionHandling.PROPAGATE, which lets exceptions fall trough
+        the execution chain (other enum values are LOG, which prints a log message on the
+        logging.ERROR level, and IGNORE which silences the exception entirely)
+        :type on_error: Union[ExceptionHandling, Callable[[AsyncEventEmitter, Exception, str], Coroutine[Any, Any, Any]]],
+        optional
+        :raises:
+            TypeError: If the provided handler is not valid
+        """
+
+        if not inspect.iscoroutinefunction(on_error) and on_error not in ExceptionHandling:
+            if inspect.iscoroutine(on_error):
+                raise TypeError(
+                    "on_error should be a coroutine *function*, not a coroutine! Pass the function"
+                    " object without calling it!"
+                )
+            raise TypeError(
+                "expected on_error to be a coroutine function or an entry from the ExceptionHandling"
+                f" enum, found {type(on_error).__name__!r} instead"
+            )
+        self._on_error = on_error
+
+    @property
+    def on_unknown_event(self) -> UnknownEventHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]:
+        """
+        Property getter for on_unknown_event
+        """
+
+        return self._on_unknown_event
+
+    @on_unknown_event.setter
+    def on_unknown_event(
+        self,
+        on_unknown_event: UnknownEventHandling
+        | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
+    ):
+        """
+        Property setter for on_unknown_event
+
+        :param on_unknown_event: Tells the emitter what to do when an unknown event is triggered. An
+        unknown event is an event for which no handler is registered (either because it has never
+        been registered or because all of its handlers have been removed). This value can either be
+        an entry from the asyncevents.UnknownEventHandling enum or a coroutine function. If the argument
+        is a coroutine function, it is awaited with the AsyncEventEmitter instance and the event name as arguments.
+        Defaults to UnknownEventHandling.IGNORE, which does nothing (other enum values are LOG, which
+        prints a log message on the logging.WARNING level, and ERROR which raises an UnknownEvent exception)
+        Note: if the given callable is a coroutine, it is awaited, while it's called normally otherwise
+        and its return value is discarded
+        :type on_unknown_event: Union[UnknownEventHandling, Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]],
+        optional
+        :raises:
+            TypeError: If the provided handler is not valid
+        """
+
+        if not inspect.iscoroutinefunction(on_unknown_event) and on_unknown_event not in UnknownEventHandling:
+            if inspect.iscoroutine(on_unknown_event):
+                raise TypeError(
+                    "on_unknown_event should be a coroutine *function*, not a coroutine! Pass the function"
+                    " object without calling it!"
+                )
+            raise TypeError(
+                "expected on_unknown_event to be a coroutine function or an entry from the"
+                f" UnknownEventHandling enum, found {type(on_unknown_event).__name__!r} instead"
+            )
+        self._on_unknown_event = on_unknown_event
+
+    @property
+    def mode(self):
+        """
+        Property getter for mode
+        """
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode: ExecutionMode):
+        """
+        Property setter for mode
+
+        :param mode: Tells the emitter how event handlers should be spawned. It should be an entry of the
+        the asyncevents.ExecutionMode enum. If it is set to ExecutionMode.PAUSE, the default, the event
+        emitter spawns tasks by awaiting each matching handler: this causes it to pause on every handler.
+        If ExecutionMode.NOWAIT is used, the emitter uses asyncio.create_task to spawns all the handlers
+        at the same time (note though that using this _mode kind of breaks the priority queueing: the handlers
+        are started according to their priorities, but once they are started they are handled by asyncio's
+        event loop which is non-deterministic, so expect some disorder). Using ExecutionMode.NOWAIT allows
+        to call the emitter's wait() method, which pauses until all currently running event handlers have
+        completed executing (when ExecutionMode.PAUSE is used, wait() is a no-op), but note that return
+        values from event handlers are not returned
+        :type mode: ExecutionMode
+        :raises:
+            TypeError: If the given mode is invalid
+        """
+
+        if mode not in ExecutionMode:
+            raise TypeError(
+                f"expected mode to be an entry from the ExecutionMode enum, found {type(mode).__name__!r}" " instead"
+            )
+        self._mode = mode
 
     def exists(self, event: str) -> bool:
         """
@@ -260,16 +345,13 @@ class AsyncEventEmitter:
         """
         Unregisters all handlers for the given
         event in one go. Does nothing if the
-        given event is not registered already and
-        raise_on_missing equals False (the default).
+        given event is not registered already.
         Note that this does not affect any
         already started event handler for the
         given event
 
         :param event: The event name
         :type event: str
-        :raises:
-            UnknownEvent: If self.on_unknown_error == UnknownEventHandling.ERROR
         """
 
         self.handlers.pop(event, None)
@@ -279,10 +361,8 @@ class AsyncEventEmitter:
     ) -> None | bool | Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]:
         """
         Returns the tuple of (priority, date, corofunc, oneshot) representing the
-        given handler. Only the first matching entry is returned. If
-        raise_on_missing is False, None is returned if the given
-        event does not exist. False is returned if the given
-        handler is not registered for the given event
+        given handler. Only the first matching entry is returned. False is returned
+        if the given handler is not registered for the given event.
 
         Note: This method is meant mostly for internal use
 
@@ -369,7 +449,7 @@ class AsyncEventEmitter:
             may raise errors or log to stderr
         :type event: str
         :param block: Temporarily overrides the emitter's global execution
-            mode. If block is True, the default, this call will pause until
+            _mode. If block is True, the default, this call will pause until
             execution of all event handlers has finished, otherwise it returns
             as soon as they're scheduled
         :type block: bool, optional
@@ -378,12 +458,11 @@ class AsyncEventEmitter:
                 and the given event is not registered
         """
 
-        mode = self.mode
+        mode = self._mode
         if block:
-            self.mode = ExecutionMode.PAUSE
-            self._emit_impl = self._emit_await
+            self._mode = ExecutionMode.PAUSE
+            await self._emit_await(event)
         else:
-            self.mode = ExecutionMode.NOWAIT
-            self._emit_impl = self._emit_nowait
-        await self._emit_impl(event)
-        self.mode = mode
+            self._mode = ExecutionMode.NOWAIT
+            await self._emit_nowait(event)
+        self._mode = mode

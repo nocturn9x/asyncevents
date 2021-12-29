@@ -75,10 +75,12 @@ def on_event(event: str, priority: int = 0, emitter: AsyncEventEmitter = get_cur
     def decorator(corofunc: Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]):
         emitter.register_event(event, corofunc, priority, oneshot)
 
-        @functools.wraps
+        @functools.wraps(corofunc)
         async def wrapper(*args, **kwargs):
             return await corofunc(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
