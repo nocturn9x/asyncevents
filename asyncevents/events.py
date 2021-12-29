@@ -165,7 +165,7 @@ class AsyncEventEmitter:
                 "expected on_error to be a coroutine function or an entry from the ExceptionHandling"
                 f" enum, found {type(on_error).__name__!r} instead"
             )
-        if inspect.iscoroutinefunction(on_unknown_event) and on_unknown_event not in UnknownEventHandling:
+        if not inspect.iscoroutinefunction(on_unknown_event) and on_unknown_event not in UnknownEventHandling:
             if inspect.iscoroutine(on_unknown_event):
                 raise TypeError(
                     "on_unknown_event should be a coroutine *function*, not a coroutine! Pass the function"
