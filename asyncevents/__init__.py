@@ -67,6 +67,14 @@ async def emit(event: str, block: bool = True):
     await get_current_emitter().emit(event, block)
 
 
+async def exists(event: str):
+    """
+    Shorthand for get_current_emitter().exists(event)
+    """
+
+    return get_current_emitter().exists(event)
+
+
 def on_event(event: str, priority: int = 0, emitter: AsyncEventEmitter = get_current_emitter(), oneshot: bool = False):
     """
     Decorator shorthand of emitter.register_event(event, f, priority, oneshot)
@@ -94,6 +102,7 @@ __all__ = [
     "on_event",
     "emit",
     "wait",
+    "exists",
     "get_current_emitter",
     "set_current_emitter",
 ]
