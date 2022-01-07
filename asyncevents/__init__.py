@@ -11,7 +11,7 @@
 import functools
 import threading
 from asyncevents import events, errors
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, Optional, List
 from asyncevents.constants import ExceptionHandling, ExecutionMode, UnknownEventHandling
 
 # Thread-local namespace for storing the currently
@@ -51,20 +51,20 @@ def set_current_emitter(emitter: AsyncEventEmitter):
     local_storage.emitter = emitter
 
 
-async def wait(event: Optional[str] = None):
+async def wait(event: Optional[str] = None) -> List[Any]:
     """
     Shorthand for get_current_emitter().wait()
     """
 
-    await get_current_emitter().wait(event)
+    return await get_current_emitter().wait(event)
 
 
-async def emit(event: str, block: bool = True):
+async def emit(event: str, block: bool = True, *args, **kwargs) -> List[Any]:
     """
     Shorthand for get_current_emitter().emit(event, block)
     """
 
-    await get_current_emitter().emit(event, block)
+    return await get_current_emitter().emit(event, block, *args, **kwargs)
 
 
 async def exists(event: str):

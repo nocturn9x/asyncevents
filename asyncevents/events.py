@@ -83,12 +83,12 @@ class AsyncEventEmitter:
                 # It's a coroutine! Call it
                 await self.on_unknown_event(self, event)
 
-    async def _handle_errors_in_awaitable(self, event: str, obj: Awaitable):
+    async def _handle_errors_in_awaitable(self, event: str, obj: Awaitable) -> Any:
         # Thanks to asyncio's *utterly amazing* (HUGE sarcasm there)
         # exception handling, we have to make this wrapper so we can
         # catch errors on a per-handler basis
         try:
-            await obj
+            return await obj
         except Exception as e:
             if (event, obj) in self._tasks:
                 obj: asyncio.Task  # Silences PyCharm's warnings
@@ -103,12 +103,12 @@ class AsyncEventEmitter:
 
     # Implementations for emit()
 
-    async def _emit_nowait(self, event: str):
+    async def _emit_nowait(self, event: str, *args, **kwargs):
         # This implementation of emit() returns immediately
         # and runs the handlers in the background
         await self._check_event(event)
-        temp: List[Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]] = []
-        t: Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
+        temp: List[Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]] = []
+        t: Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]
         while self.handlers[event]:
             # We use heappop because we want the first
             # by priority and the heap queue only has
@@ -118,20 +118,21 @@ class AsyncEventEmitter:
             if t[-1]:
                 # It won't be re-scheduled
                 temp.pop()
-            task = asyncio.create_task(t[-2](self, event))
+            task = asyncio.create_task(t[-2](self, event, *args, **kwargs))
             self._tasks.append((event, asyncio.create_task(self._handle_errors_in_awaitable(event, task))))
         # We push back the elements
         for t in temp:
             heappush(self.handlers[event], t)
 
-    async def _emit_await(self, event: str):
+    async def _emit_await(self, event: str, *args, **kwargs) -> List[Any]:
         # This implementation of emit() returns only after
         # all handlers have finished executing
         await self._check_event(event)
+        result = []
         temp: List[
-            Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
+            Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]
         ] = self.handlers[event].copy()
-        t: Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]
+        t: Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]
         while temp:
             # We use heappop because we want the first
             # by priority and the heap queue only has
@@ -139,7 +140,8 @@ class AsyncEventEmitter:
             t = heappop(temp)
             if t[-1]:
                 self.unregister_handler(event, t[-2])
-            await self._handle_errors_in_awaitable(event, t[-2](self, event))
+            result.append(await self._handle_errors_in_awaitable(event, t[-2](self, event, *args, **kwargs)))
+        return result
 
     def __init__(
         self,
@@ -148,7 +150,7 @@ class AsyncEventEmitter:
         on_error: ExceptionHandling
         | Callable[["AsyncEventEmitter", Exception, str], Coroutine[Any, Any, Any]] = ExceptionHandling.PROPAGATE,
         on_unknown_event: UnknownEventHandling
-        | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
+        | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
         mode: ExecutionMode = ExecutionMode.PAUSE,
     ):
         """
@@ -179,11 +181,11 @@ class AsyncEventEmitter:
         # handler is to be deleted after it fires the first
         # time (aka 'oneshot')
         self.handlers: Dict[
-            str, List[Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]]
+            str, List[Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]]
         ] = defaultdict(list)
 
     @property
-    def on_error(self) -> ExceptionHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]:
+    def on_error(self) -> ExceptionHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]:
         """
         Property getter for on_error
         """
@@ -191,7 +193,7 @@ class AsyncEventEmitter:
         return self._on_error
 
     @on_error.setter
-    def on_error(self, on_error: ExceptionHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]):
+    def on_error(self, on_error: ExceptionHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]):
         """
         Property setter for on_error
 
@@ -222,7 +224,7 @@ class AsyncEventEmitter:
         self._on_error = on_error
 
     @property
-    def on_unknown_event(self) -> UnknownEventHandling | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]:
+    def on_unknown_event(self) -> UnknownEventHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]:
         """
         Property getter for on_unknown_event
         """
@@ -233,7 +235,7 @@ class AsyncEventEmitter:
     def on_unknown_event(
         self,
         on_unknown_event: UnknownEventHandling
-        | Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
+        | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
     ):
         """
         Property setter for on_unknown_event
@@ -314,7 +316,7 @@ class AsyncEventEmitter:
     def register_event(
         self,
         event: str,
-        handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]],
+        handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]],
         priority: int = 0,
         oneshot: bool = False,
     ):
@@ -329,7 +331,7 @@ class AsyncEventEmitter:
         :type event: str
         :param handler: A coroutine function to be called
             when the event is generated
-        :type handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]
+        :type handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
         :param priority: The handler's execution priority,
             defaults to 0 (lower priority means earlier
             execution!)
@@ -357,8 +359,8 @@ class AsyncEventEmitter:
         self.handlers.pop(event, None)
 
     def _get(
-        self, event: str, handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]
-    ) -> None | bool | Tuple[int, float, Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]], bool]:
+        self, event: str, handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
+    ) -> None | bool | Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]:
         """
         Returns the tuple of (priority, date, corofunc, oneshot) representing the
         given handler. Only the first matching entry is returned. False is returned
@@ -370,7 +372,7 @@ class AsyncEventEmitter:
         :type event: str
         :param handler: A coroutine function to be called
             when the event is generated
-        :type handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]
+        :type handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
         :raises:
             UnknownEvent: If self.on_unknown_error == UnknownEventHandling.ERROR
         :returns: The tuple of (priority, date, coro) representing the
@@ -387,7 +389,7 @@ class AsyncEventEmitter:
     def unregister_handler(
         self,
         event: str,
-        handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]],
+        handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]],
         remove_all: bool = False,
     ):
         """
@@ -402,7 +404,7 @@ class AsyncEventEmitter:
         :param event: The event name
         :type event: str
         :param handler: The coroutine function to be unregistered
-        :type handler: Callable[["AsyncEventEmitter", str], Coroutine[Any, Any, Any]]
+        :type handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
         :param remove_all: If True, all occurrences of the
             given handler are removed, otherwise only the first
             one is unregistered
@@ -422,7 +424,7 @@ class AsyncEventEmitter:
         # We maintain the heap queue invariant
         heapify(self.handlers[event])
 
-    async def wait(self, event: Optional[str] = None):
+    async def wait(self, event: Optional[str] = None) -> List[Any]:
         """
         Waits until all the event handlers for the given
         event have finished executing. When the given event
@@ -430,19 +432,29 @@ class AsyncEventEmitter:
         events to terminate. This method is a no-op when the
         emitter is configured with anything other than
         ExecutionMode.NOWAIT or if emit() hasn't been called
-        with block=False
+        with block=False. Returns a list of all return values
+        from the event handlers
         """
 
         if not event:
-            await asyncio.gather(*[t[1] for t in self._tasks])
+            result = [e for e in await asyncio.gather(*[t[1] for t in self._tasks])]
             self._tasks = []
+            return result
         else:
             await self._check_event(event)
-            await asyncio.gather(*[t[1] for t in self._tasks if t[0] == event])
+            result = [e for e in await asyncio.gather(*[t[1] for t in self._tasks if t[0] == event])]
+            for t in self._tasks:
+                if t[0] == event:
+                    self._tasks.remove(t)
+            return result
 
-    async def emit(self, event: str, block: bool = True):
+    async def emit(self, event: str, block: bool = True, *args, **kwargs) -> List[Any]:
         """
-        Emits an event
+        Emits an event. Any extra positional and keyword arguments besides
+        the event name and the "block" boolean are passed over to the
+        event handlers themselves. Returns the values of the event
+        handlers in a list when using blocking mode or an empty
+        list otherwise
 
         :param event: The event to trigger. Note that,
             depending on the configuration, unknown events
@@ -461,8 +473,10 @@ class AsyncEventEmitter:
         mode = self._mode
         if block:
             self._mode = ExecutionMode.PAUSE
-            await self._emit_await(event)
+            result = await self._emit_await(event, *args, **kwargs)
         else:
             self._mode = ExecutionMode.NOWAIT
-            await self._emit_nowait(event)
+            await self._emit_nowait(event, *args, **kwargs)
+            result = []
         self._mode = mode
+        return result
