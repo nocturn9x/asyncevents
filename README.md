@@ -69,7 +69,7 @@ async def main():
     await emit("hello")  # This call blocks until hello() terminates
     print("Handlers for event 'hello' have exited")
     # Notice how, until here, the output is in order: this is on purpose!
-    # When using blocking _mode, asyncevents even guarantees that handlers
+    # When using blocking mode, asyncevents even guarantees that handlers
     # with different priorities will be executed in order
     print("Firing non-blocking event 'hi'")
     await emit("hi", block=False)  # This one spawns hi() and returns immediately
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-__Note__: This example showed that the event names match the functions' names: this is just for explanatory purposes!
+__Note__: This example showed that the event names match the functions' names, but this is just for explanatory purposes!
 It's not compulsory for your event and their respective handlers' names to match. You can also register as many
 functions you want for the same or multiple events and asyncevents will call them all when one of them is fired.
 For more usage examples (until the documentation is done), check out the tests directory or read the source code:
