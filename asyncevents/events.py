@@ -16,6 +16,7 @@ from collections import defaultdict
 from heapq import heappush, heapify, heappop
 from logging import Logger, getLogger, INFO, Formatter, StreamHandler
 from typing import Dict, List, Tuple, Coroutine, Callable, Any, Awaitable, Optional
+from typing import Union  # Separate line because it's gonna be deprecated soon. Can't break Justin's userbot tho :>
 
 from asyncevents.constants import ExceptionHandling, UnknownEventHandling, ExecutionMode
 from asyncevents.errors import UnknownEvent
@@ -147,10 +148,12 @@ class AsyncEventEmitter:
         self,
         # These type hints come from https://stackoverflow.com/a/59177557/12159081
         # and should correctly hint a coroutine function
-        on_error: ExceptionHandling
-        | Callable[["AsyncEventEmitter", Exception, str], Coroutine[Any, Any, Any]] = ExceptionHandling.PROPAGATE,
-        on_unknown_event: UnknownEventHandling
-        | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
+        on_error: Union[
+            ExceptionHandling, Callable[["AsyncEventEmitter", Exception, str], Coroutine[Any, Any, Any]]
+        ] = ExceptionHandling.PROPAGATE,
+        on_unknown_event: Union[
+            UnknownEventHandling, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
+        ] = UnknownEventHandling.IGNORE,
         mode: ExecutionMode = ExecutionMode.PAUSE,
     ):
         """
@@ -185,7 +188,7 @@ class AsyncEventEmitter:
         ] = defaultdict(list)
 
     @property
-    def on_error(self) -> ExceptionHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]:
+    def on_error(self) -> Union[ExceptionHandling, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]]:
         """
         Property getter for on_error
         """
@@ -193,7 +196,9 @@ class AsyncEventEmitter:
         return self._on_error
 
     @on_error.setter
-    def on_error(self, on_error: ExceptionHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]):
+    def on_error(
+        self, on_error: Union[ExceptionHandling, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]]
+    ):
         """
         Property setter for on_error
 
@@ -224,7 +229,9 @@ class AsyncEventEmitter:
         self._on_error = on_error
 
     @property
-    def on_unknown_event(self) -> UnknownEventHandling | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]:
+    def on_unknown_event(
+        self,
+    ) -> Union[UnknownEventHandling, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]]:
         """
         Property getter for on_unknown_event
         """
@@ -234,8 +241,9 @@ class AsyncEventEmitter:
     @on_unknown_event.setter
     def on_unknown_event(
         self,
-        on_unknown_event: UnknownEventHandling
-        | Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]] = UnknownEventHandling.IGNORE,
+        on_unknown_event: Union[
+            UnknownEventHandling, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
+        ] = UnknownEventHandling.IGNORE,
     ):
         """
         Property setter for on_unknown_event
@@ -360,7 +368,9 @@ class AsyncEventEmitter:
 
     def _get(
         self, event: str, handler: Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]]
-    ) -> None | bool | Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]:
+    ) -> Union[
+        None, bool, Tuple[int, float, Callable[["AsyncEventEmitter", str, ...], Coroutine[Any, Any, Any]], bool]
+    ]:
         """
         Returns the tuple of (priority, date, corofunc, oneshot) representing the
         given handler. Only the first matching entry is returned. False is returned
