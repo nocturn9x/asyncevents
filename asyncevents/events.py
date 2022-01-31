@@ -46,8 +46,6 @@ class AsyncEventEmitter:
         is a coroutine function, it is awaited with the AsyncEventEmitter instance and the event name as arguments.
         Defaults to UnknownEventHandling.IGNORE, which does nothing (other enum values are LOG, which
         prints a log message on the logging.WARNING level, and ERROR which raises an UnknownEvent exception)
-        Note: if the given callable is a coroutine, it is awaited, while it's called normally otherwise
-        and its return value is discarded
     :type on_unknown_event: Union[UnknownEventHandling, Callable[[AsyncEventEmitter, str], Coroutine[Any, Any, Any]]],
         optional
     :param mode: Tells the emitter how event handlers should be spawned. It should be an entry of the
