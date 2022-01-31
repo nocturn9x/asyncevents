@@ -52,7 +52,7 @@ class AsyncEventEmitter:
         the asyncevents.ExecutionMode enum. If it is set to ExecutionMode.PAUSE, the default, the event
         emitter spawns tasks by awaiting each matching handler: this causes it to pause on every handler.
         If ExecutionMode.NOWAIT is used, the emitter uses asyncio.create_task to spawns all the handlers
-        at the same time (note though that using this _mode kind of breaks the priority queueing: the handlers
+        at the same time (note though that using this mode kind of breaks the priority queueing: the handlers
         are started according to their priorities, but once they are started they are handled by asyncio's
         event loop which is non-deterministic, so expect some disorder). Using ExecutionMode.NOWAIT allows
         to call the emitter's wait() method, which pauses until all currently running event handlers have
@@ -289,7 +289,7 @@ class AsyncEventEmitter:
         the asyncevents.ExecutionMode enum. If it is set to ExecutionMode.PAUSE, the default, the event
         emitter spawns tasks by awaiting each matching handler: this causes it to pause on every handler.
         If ExecutionMode.NOWAIT is used, the emitter uses asyncio.create_task to spawns all the handlers
-        at the same time (note though that using this _mode kind of breaks the priority queueing: the handlers
+        at the same time (note though that using this mode kind of breaks the priority queueing: the handlers
         are started according to their priorities, but once they are started they are handled by asyncio's
         event loop which is non-deterministic, so expect some disorder). Using ExecutionMode.NOWAIT allows
         to call the emitter's wait() method, which pauses until all currently running event handlers have
@@ -469,7 +469,7 @@ class AsyncEventEmitter:
             may raise errors or log to stderr
         :type event: str
         :param block: Temporarily overrides the emitter's global execution
-            _mode. If block is True, the default, this call will pause until
+            mode. If block is True, the default, this call will pause until
             execution of all event handlers has finished, otherwise it returns
             as soon as they're scheduled
         :type block: bool, optional
