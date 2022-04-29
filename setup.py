@@ -17,8 +17,8 @@ if __name__ == "__main__":
         name="asyncevents",
         version="0.1",
         author="Nocturn9x",
-        author_email="hackhab@gmail.com",
-        description="Asynchronous event handling in modern Python",
+        author_email="nocturn9x@nocturn9x.space",
+        description="Asynchronous event handling for modern Python",
         long_description=long_description,
         long_description_content_type="text/markdown",
         url="https://github.com/nocturn9x/asyncevents",
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         classifiers=[
             "Programming Language :: Python :: 3",
             "Operating System :: OS Independent",
-            "License :: OSI Approved :: Apache License 2.0",
+            "License :: OSI Approved :: Apache Software License",
         ],
-        python_requires=">=3.8",
+        python_requires=">=3.6",
     )
