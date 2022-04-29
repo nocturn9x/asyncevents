@@ -14,7 +14,7 @@ from enum import Enum, auto, EnumMeta
 class ContainsEnumMeta(EnumMeta):
     """
     Simple metaclass that implements
-    the item in self operation
+    the 'item in self' operation
     """
 
     def __contains__(cls, item):
@@ -38,8 +38,8 @@ class ExceptionHandling(Enum, metaclass=ContainsEnumMeta):
     to be caught
     """
 
-    IGNORE: "ExceptionHandling" = auto()  # The exception is caught and ignored
-    LOG: "ExceptionHandling" = auto()  # The exception is caught and logged
+    IGNORE: "ExceptionHandling" = auto()     # The exception is caught and ignored
+    LOG: "ExceptionHandling" = auto()        # The exception is caught and logged
     PROPAGATE: "ExceptionHandling" = auto()  # The exception is not caught at all
 
 
@@ -53,8 +53,8 @@ class UnknownEventHandling(Enum, metaclass=ContainsEnumMeta):
     """
 
     IGNORE: "UnknownEventHandling" = auto()  # Do nothing
-    LOG: "UnknownEventHandling" = auto()  # Log it as a warning
-    ERROR: "UnknownEventHandling" = auto()  # raise an UnknownEvent error
+    LOG: "UnknownEventHandling" = auto()     # Log it as a warning
+    ERROR: "UnknownEventHandling" = auto()   # raise an UnknownEvent error
 
 
 class ExecutionMode(Enum, metaclass=ContainsEnumMeta):
@@ -63,5 +63,5 @@ class ExecutionMode(Enum, metaclass=ContainsEnumMeta):
     spawns tasks
     """
 
-    PAUSE: "ExecutionMode" = auto()  # Spawn tasks via "await"
+    PAUSE: "ExecutionMode" = auto()   # Spawn tasks via "await"
     NOWAIT: "ExecutionMode" = auto()  # Use asyncio.create_task

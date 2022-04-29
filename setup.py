@@ -28,5 +28,5 @@ if __name__ == "__main__":
             "Operating System :: OS Independent",
             "License :: OSI Approved :: Apache Software License",
         ],
-        python_requires=">=3.6",
+        python_requires=">=3.8",
     )
