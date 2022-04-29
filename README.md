@@ -8,7 +8,7 @@ asyncevents is a small library to help developers perform asynchronous event han
 - Built-in exception handling (optional)
 - The public API is fully type hinted for those sweet, sweet editor suggestions
 - Public API is fully documented (and some private stuff too): you could write this from scratch in a couple of hours (like I did)
-- Very small (~200 CLOC), although it can't fit on a postcard
+- Very small (<800 CLOC), although it can't fit on a postcard
 - Oneshot events (i.e. fired only once)
 
 
