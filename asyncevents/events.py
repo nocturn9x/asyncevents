@@ -56,8 +56,7 @@ class AsyncEventEmitter:
         are started according to their priorities, but once they are started they are handled by asyncio's
         event loop which is non-deterministic, so expect some disorder). Using ExecutionMode.NOWAIT allows
         to call the emitter's wait() method, which pauses until all currently running event handlers have
-        completed executing (when ExecutionMode.PAUSE is used, wait() is a no-op), but note that return
-        values from event handlers are not returned
+        completed executing (when ExecutionMode.PAUSE is used, wait() is a no-op)
     :type mode: ExecutionMode
     """
 
@@ -176,7 +175,7 @@ class AsyncEventEmitter:
         # list of tuples. Each tuple in the list contains
         # a priority (defaults to 0), the insertion time of
         # when the handler was registered (to act as a tie
-        # breaker for _tasks with identical priorities or
+        # breaker for tasks with identical priorities or
         # when priorities aren't used at all) a coroutine
         # function object and a boolean that signals if the
         # handler is to be deleted after it fires the first
@@ -405,9 +404,8 @@ class AsyncEventEmitter:
         remove_all is True (defaults to False), all occurrences
         of the given handler are removed, otherwise only the first
         one is unregistered. Does nothing if the given event is not
-        registered already and raise_on_missing equals False (the default).
-        This method does nothing if the given event exists, but the given
-        handler is not registered for it
+        registered already. This method does nothing if the given 
+        event exists, but the given handler is not registered for it
 
         :param event: The event name
         :type event: str
